@@ -1,7 +1,7 @@
 from pathlib import Path
 
 import pandas as pd
-
+from datetime import date
 
 REQUIRED_COLUMNS = ("date", "service", "ridership")
 
@@ -56,6 +56,30 @@ def validate_ktmb_data(data: pd.DataFrame) -> None:
     if (ridership % 1 != 0).any():
         raise ValueError("ridership must contain whole numbers.")
 
+def validate_processed_data(data: pd.DataFrame) -> date:
+    """Check cleaned rows and return the latest dataset date."""
+    validate_ktmb_data(data)
+
+    duplicate_keys = data.duplicated(
+        subset=["date", "service"], keep=False
+    )
+    if duplicate_keys.any():
+        duplicate_count = int(duplicate_keys.sum())
+        raise ValueError(
+            "Processed data has "
+            f"{duplicate_count} row(s) with duplicate date/service keys."
+        )
+
+    latest_date = pd.to_datetime(
+        data["date"], format="%Y-%m-%d"
+    ).max().date()
+
+    if latest_date > date.today():
+        raise ValueError(
+            f"Latest dataset date {latest_date} is in the future."
+        )
+
+    return latest_date
 
 if __name__ == "__main__":
     project_root = Path(__file__).resolve().parent.parent

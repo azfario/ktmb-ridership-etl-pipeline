@@ -3,8 +3,9 @@ import sys
 from pathlib import Path
 
 from extract import extract_ktmb_data
+from load import load_ktmb_data
 from transform import save_processed_data, transform_ktmb_data
-from validate import validate_ktmb_data
+from validate import validate_ktmb_data, validate_processed_data
 
 
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
@@ -30,7 +31,7 @@ def configure_logging() -> None:
 
 
 def run_pipeline() -> None:
-    """Run the Phase 1 KTMB pipeline from download to processed CSV."""
+    """Run the KTMB pipeline from download to PostgreSQL."""
     try:
         LOGGER.info("Starting KTMB ETL pipeline")
         LOGGER.info("Downloading source dataset")
@@ -44,11 +45,24 @@ def run_pipeline() -> None:
         processed_data = transform_ktmb_data(raw_data)
         LOGGER.info("Transformation completed: %s rows", len(processed_data))
 
-        validate_ktmb_data(processed_data)
-        LOGGER.info("Processed validation passed")
+        latest_date = validate_processed_data(processed_data)
+        LOGGER.info(
+            "Processed validation passed; latest dataset date: %s",
+            latest_date,
+        )
 
         output_path = save_processed_data(processed_data)
         LOGGER.info("Processed dataset saved to %s", output_path)
+
+        LOGGER.info("Loading processed data into PostgreSQL")
+        rows_before, rows_after = load_ktmb_data(processed_data)
+        LOGGER.info(
+            "Database load completed: %s input rows; table rows %s -> %s",
+            len(processed_data),
+            rows_before,
+            rows_after,
+        )
+
         LOGGER.info("Pipeline completed successfully")
 
     except Exception:

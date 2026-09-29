@@ -1,0 +1,53 @@
+services:
+  db:
+    image: postgres:18
+    environment:
+      POSTGRES_DB: "${DB_NAME:?Set DB_NAME in .env}"
+      POSTGRES_USER: "${DB_USER:?Set DB_USER in .env}"
+      POSTGRES_PASSWORD: "${DB_PASSWORD:?Set DB_PASSWORD in .env}"
+    ports:
+      - "127.0.0.1:5433:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql
+      - ./sql/create_tables.sql:/docker-entrypoint-initdb.d/01-create_tables.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -h 127.0.0.1 -U \"$${POSTGRES_USER}\" -d \"$${POSTGRES_DB}\""]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+      start_period: 15s
+
+  etl:
+    build: .
+    image: ktmb-etl:latest
+    environment:
+      DB_HOST: db
+      DB_PORT: "5432"
+      DB_NAME: "${DB_NAME:?Set DB_NAME in .env}"
+      DB_USER: "${DB_USER:?Set DB_USER in .env}"
+      DB_PASSWORD: "${DB_PASSWORD:?Set DB_PASSWORD in .env}"
+    depends_on:
+      db:
+        condition: service_healthy
+    volumes:
+      - ./data:/app/data
+      - ./logs:/app/logs
+
+  airflow:
+    image: apache/airflow:3.3.2-python3.13
+    command: standalone
+    environment:
+      AIRFLOW__CORE__LOAD_EXAMPLES: "false"
+      AIRFLOW__CORE__DEFAULT_TIMEZONE: "Asia/Kuala_Lumpur"
+    ports:
+      - "127.0.0.1:8081:8080"
+    volumes:
+      - airflow_home:/opt/airflow
+      - ./airflow/dags:/opt/airflow/dags
+    depends_on:
+      db:
+        condition: service_healthy
+
+volumes:
+  postgres_data:
+  airflow_home:
