@@ -34,16 +34,29 @@ services:
       - ./logs:/app/logs
 
   airflow:
-    image: apache/airflow:3.3.2-python3.13
+    build:
+      context: .
+      dockerfile: Dockerfile.airflow
+    image: ktmb-airflow:3.3.2
     command: standalone
     environment:
       AIRFLOW__CORE__LOAD_EXAMPLES: "false"
       AIRFLOW__CORE__DEFAULT_TIMEZONE: "Asia/Kuala_Lumpur"
+      TZ: "Asia/Kuala_Lumpur"
+      PYTHONPATH: "/app/src"
+      DB_HOST: db
+      DB_PORT: "5432"
+      DB_NAME: "${DB_NAME:?Set DB_NAME in .env}"
+      DB_USER: "${DB_USER:?Set DB_USER in .env}"
+      DB_PASSWORD: "${DB_PASSWORD:?Set DB_PASSWORD in .env}"
     ports:
       - "127.0.0.1:8081:8080"
     volumes:
       - airflow_home:/opt/airflow
       - ./airflow/dags:/opt/airflow/dags
+      - ./src:/app/src:ro
+      - ./data:/app/data
+      - ./logs:/app/logs
     depends_on:
       db:
         condition: service_healthy
