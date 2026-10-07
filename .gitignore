@@ -2,6 +2,7 @@
 .venv/
 __pycache__/
 *.py[cod]
+.pytest_cache/
 
 # Generated pipeline files
 data/raw/*.csv
@@ -10,3 +11,6 @@ logs/*.log
 
 # Local credentials
 .env
+
+# Power BI drafts: dashboard work is deferred until the final phase
+*.pbix
