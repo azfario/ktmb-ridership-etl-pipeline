@@ -1,8 +1,27 @@
 # Malaysia KTMB Ridership ETL Pipeline
 
-Extracts official KTMB ridership data, cleans it, and loads it into PostgreSQL for analysis.
+This project turns Malaysia's daily KTMB train ridership data into a database ready for analysis. It downloads the official dataset, checks and cleans the records, and loads them into PostgreSQL without creating duplicate entries.
+
+Apache Airflow runs the pipeline daily, while SQL views summarise ridership trends, service performance, and weekday versus weekend usage. A Power BI dashboard is planned as the final stage.
 
 **Data source:** [data.gov.my daily KTMB ridership CSV](https://storage.data.gov.my/transportation/ktmb/ridership_ktmb_daily.csv).
+
+## Pipeline Architecture
+
+```mermaid
+flowchart TD
+    A["data.gov.my: KTMB CSV"] --> B["Extract and save raw CSV"]
+    B --> C["Validate raw data"]
+    C --> D["Transform, validate and save cleaned CSV"]
+    D --> E["Load into PostgreSQL and verify records"]
+    E --> F["SQL analytics views"]
+    F --> G["Power BI dashboard - planned"]
+    H["Apache Airflow: daily at 6 AM Malaysia time"] -. "Schedules the ETL tasks" .-> B
+```
+
+Raw files preserve the downloaded data. Cleaned records include calendar fields, and PostgreSQL stores one record per date and service. SQL views provide the summaries for reporting.
+
+---
 
 ## Tech Stack
 
